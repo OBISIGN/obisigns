@@ -199,13 +199,10 @@
 
     function takePhoto() {
       const canvas = document.createElement('canvas');
-      // ขนาดจริงบัตรประชาชน 85.6mm x 53.98mm = อัตราส่วน ~1.586
-      const width = 800;
-      const height = Math.round(width / 1.586);
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, width, height);
+      ctx.drawImage(video, 0, 0);
       const dataUrl = canvas.toDataURL('image/jpeg');
       previewImg.src = dataUrl;
       previewImg.style.display = 'block';
