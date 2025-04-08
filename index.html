@@ -97,6 +97,7 @@
       margin: 0.5rem;
       padding: 0.7rem 1.2rem;
       font-size: 1rem;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -132,9 +133,7 @@
       <img id="finalImage" src="" alt="รวมภาพ" />
       <div class="buttons" id="shareSection">
         <button onclick="location.reload()">🔄 เริ่มใหม่</button>
-
-<button onclick="downloadAndShare()">💾📤 บันทึกและแชร์</button>
-
+        <button onclick="downloadAndShare()">💾📤 บันทึกและแชร์</button>
       </div>
     </div>
   </div>
@@ -157,8 +156,12 @@
     }
 
     function resizeCanvas() {
-      signatureCanvas.width = signatureCanvas.offsetWidth;
-      signatureCanvas.height = signatureCanvas.offsetHeight;
+      const ratio = window.devicePixelRatio || 1;
+      signatureCanvas.width = signatureCanvas.offsetWidth * ratio;
+      signatureCanvas.height = signatureCanvas.offsetHeight * ratio;
+      signatureCanvas.style.width = signatureCanvas.offsetWidth + "px";
+      signatureCanvas.style.height = signatureCanvas.offsetHeight + "px";
+      signatureCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
@@ -183,13 +186,17 @@
       signatureCtx.beginPath();
       signatureCtx.moveTo(pos.x, pos.y);
     }
+
     function drawMove(e) {
       if (!drawing) return;
       const pos = getPosition(e);
       signatureCtx.lineTo(pos.x, pos.y);
       signatureCtx.stroke();
     }
-    function drawEnd() { drawing = false; }
+
+    function drawEnd() {
+      drawing = false;
+    }
 
     signatureCanvas.addEventListener('mousedown', drawStart);
     signatureCanvas.addEventListener('mousemove', drawMove);
@@ -197,6 +204,14 @@
     signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
     signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
     signatureCanvas.addEventListener('touchend', drawEnd);
+
+    signatureCanvas.addEventListener("touchstart", function (e) {
+      if (e.target === signatureCanvas) e.preventDefault();
+    }, { passive: false });
+
+    signatureCanvas.addEventListener("touchmove", function (e) {
+      if (e.target === signatureCanvas) e.preventDefault();
+    }, { passive: false });
 
     function clearSignature() {
       signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
@@ -207,6 +222,7 @@
         .then(stream => {
           currentStream = stream;
           video.srcObject = stream;
+          video.style.display = 'block';
         })
         .catch(err => {
           alert('ไม่สามารถเปิดกล้อง: ' + err);
@@ -218,6 +234,7 @@
         currentStream.getTracks().forEach(track => track.stop());
         currentStream = null;
         video.srcObject = null;
+        video.style.display = 'none';
       }
     }
 
@@ -242,6 +259,11 @@
     }
 
     function generateImage(callback) {
+      if (!previewImg.src) {
+        alert("กรุณาถ่ายภาพก่อนดูตัวอย่าง");
+        return;
+      }
+
       const image = new Image();
       image.onload = () => {
         const canvas = document.createElement('canvas');
@@ -277,12 +299,18 @@
     }
 
     function downloadAndShare() {
+      if (!finalDataUrl) {
+        alert("ยังไม่มีภาพตัวอย่าง กรุณากด 'ดูตัวอย่างก่อนแชร์'");
+        return;
+      }
+
       const link = document.createElement('a');
       link.href = finalDataUrl;
       link.download = 'obisign.jpg';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
       fetch(finalDataUrl)
         .then(res => res.blob())
         .then(blob => {
@@ -294,21 +322,10 @@
               files: [file]
             });
           } else {
-            alert('แชร์สำเร็จแล้ว หรือเบราว์เซอร์ไม่รองรับการแชร์');
+            alert('ไฟล์ถูกบันทึกแล้ว กรุณาแชร์ด้วยวิธีอื่น (LINE, Email ฯลฯ)');
           }
         });
     }
-  
-signatureCanvas.addEventListener("touchstart", function (e) {
-  if (e.target === signatureCanvas) e.preventDefault();
-}, { passive: false });
-
-signatureCanvas.addEventListener("touchmove", function (e) {
-  if (e.target === signatureCanvas) e.preventDefault();
-}, { passive: false });
-
-</script>
-
-
+  </script>
 </body>
 </html>
