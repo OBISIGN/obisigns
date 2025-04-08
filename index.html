@@ -238,6 +238,7 @@
   image.onload = () => {
     const canvas = document.createElement('canvas');
     const margin = 50;
+    const sidePadding = 40;
     const textSpacing = 30;
     const signatureHeight = 150;
     const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
@@ -250,7 +251,7 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // วางภาพอยู่ด้านบนแบบมี margin
-    ctx.drawImage(image, 0, margin);
+    ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
 
     // ข้อความลายน้ำและสำเนาถูกต้อง
     ctx.font = '16px sans-serif';
@@ -260,7 +261,7 @@
     ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
 
     // ลายเซ็นด้านล่าง
-    ctx.drawImage(signatureCanvas, canvas.width * 0.25, image.height + margin + textSpacing * 2 + 10, canvas.width * 0.5, signatureHeight);
+    ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
 
     const dataUrl = canvas.toDataURL('image/jpeg');
     finalImage.src = dataUrl;
