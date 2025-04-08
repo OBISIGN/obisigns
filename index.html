@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Obisign - เซ็นรับรองสำเนาถูกต้อง</title>
+  <title>Obisign - ขั้นตอนการรับรองสำเนาบัตร</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -33,6 +33,26 @@
       height: 100%;
       object-fit: cover;
       border-radius: 6px;
+    }
+    .overlay-frame {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: 2px dashed #00ff00;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .frame-instruction {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 16px;
+      color: #00ff00;
+      font-weight: bold;
+      text-shadow: 0 0 5px #000;
+      z-index: 11;
     }
     #preview-img {
       display: none;
@@ -83,27 +103,16 @@
       padding: 0.7rem 1.2rem;
       font-size: 1rem;
     }
-    .overlay-frame {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 90%;
-      aspect-ratio: 1.586;
-      transform: translate(-50%, -50%);
-      border: 2px dashed #00ff00;
-      box-sizing: border-box;
-      pointer-events: none;
-      z-index: 10;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2 style="text-align: center;">Obisign - เซ็นรับรองสำเนาถูกต้อง</h2>
+    <h2 style="text-align: center;">ขั้นตอนการรับรองสำเนาบัตร</h2>
 
     <div class="video-wrapper">
       <div class="overlay-frame"></div>
       <video id="video" autoplay playsinline></video>
+      <div class="frame-instruction">วางบัตรให้อยู่ในกรอบ</div>
     </div>
 
     <div class="buttons">
@@ -138,7 +147,6 @@
     const previewImg = document.getElementById('preview-img');
     const signatureCanvas = document.getElementById('signatureCanvas');
     const signatureCtx = signatureCanvas.getContext('2d');
-signatureCtx.strokeStyle = 'blue';
     signatureCtx.strokeStyle = "blue";
     const finalImage = document.getElementById('finalImage');
     const result = document.getElementById('result');
@@ -167,7 +175,7 @@ signatureCtx.strokeStyle = 'blue';
     }
 
     function drawStart(e) {
-  signatureCtx.strokeStyle = 'blue';
+      signatureCtx.strokeStyle = 'blue';
       drawing = true;
       const pos = getPosition(e);
       signatureCtx.beginPath();
