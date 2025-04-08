@@ -234,31 +234,41 @@
     }
 
     function generateImage(callback) {
-      const image = new Image();
-      image.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height + 250;
-        const ctx = canvas.getContext('2d');
+  const image = new Image();
+  image.onload = () => {
+    const canvas = document.createElement('canvas');
+    const margin = 50;
+    const textSpacing = 30;
+    const signatureHeight = 150;
+    const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
 
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    canvas.width = image.width;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
 
-        ctx.drawImage(image, 0, 0, image.width, image.height);
-        ctx.font = '16px sans-serif';
-        ctx.fillStyle = 'black';
-        ctx.textAlign = 'center';
-        ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + 30);
-        ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + 60);
-        ctx.drawImage(signatureCanvas, 0, image.height + 80, canvas.width, 150);
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        finalImage.src = dataUrl;
-        result.style.display = 'block';
-        finalDataUrl = dataUrl;
-        if (callback) callback(dataUrl);
-      };
-      image.src = previewImg.src;
+    // วางภาพอยู่ด้านบนแบบมี margin
+    ctx.drawImage(image, 0, margin);
+
+    // ข้อความลายน้ำและสำเนาถูกต้อง
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
+    ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
+
+    // ลายเซ็นด้านล่าง
+    ctx.drawImage(signatureCanvas, canvas.width * 0.25, image.height + margin + textSpacing * 2 + 10, canvas.width * 0.5, signatureHeight);
+
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    finalImage.src = dataUrl;
+    result.style.display = 'block';
+    finalDataUrl = dataUrl;
+    if (callback) callback(dataUrl);
+  };
+  image.src = previewImg.src;
     }
 
     function generatePreview() {
