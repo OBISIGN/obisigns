@@ -98,6 +98,7 @@
     <div class="buttons">
       <button onclick="clearSignature()">ลบลายเซ็น</button>
       <button onclick="generateAndDownload()">บันทึกลงเครื่อง</button>
+      <button onclick="shareImage()">📤 แชร์ภาพเข้าไลน์</button>
     </div>
 
     <div id="result">
@@ -114,6 +115,7 @@
     const result = document.getElementById('result');
     let currentStream = null;
     let drawing = false;
+    let finalDataUrl = null;
 
     function resizeCanvas() {
       signatureCanvas.width = signatureCanvas.offsetWidth;
@@ -190,7 +192,7 @@
       stopCamera();
     }
 
-    function generateAndDownload() {
+    function generateImage(callback) {
       const image = new Image();
       image.onload = () => {
         const canvas = document.createElement('canvas');
@@ -212,15 +214,39 @@
         const dataUrl = canvas.toDataURL('image/jpeg');
         finalImage.src = dataUrl;
         result.style.display = 'block';
+        finalDataUrl = dataUrl;
+        if (callback) callback(dataUrl);
+      };
+      image.src = previewImg.src;
+    }
 
+    function generateAndDownload() {
+      generateImage((dataUrl) => {
         const link = document.createElement('a');
         link.href = dataUrl;
         link.download = 'obisign.jpg';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-      };
-      image.src = previewImg.src;
+      });
+    }
+
+    function shareImage() {
+      if (!finalDataUrl) return alert("กรุณาบันทึกรูปก่อนแชร์");
+      fetch(finalDataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+              title: 'Obisign',
+              text: 'ส่งภาพเซ็นรับรอง Obisign',
+              files: [file]
+            });
+          } else {
+            alert('เบราว์เซอร์ไม่รองรับการแชร์ไฟล์');
+          }
+        });
     }
   </script>
 </body>
