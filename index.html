@@ -108,11 +108,15 @@
 
     <div class="buttons">
       <button onclick="clearSignature()">ลบลายเซ็น</button>
-      <button onclick="generateAndShare()">💾📤 บันทึกและแชร์</button>
+      <button onclick="generatePreview()">ดูตัวอย่างก่อนแชร์</button>
     </div>
 
     <div id="result">
+      <h3>ภาพตัวอย่าง:</h3>
       <img id="finalImage" src="" alt="รวมภาพ" />
+      <div class="buttons">
+        <button onclick="downloadAndShare()">💾📤 บันทึกและแชร์</button>
+      </div>
     </div>
   </div>
 
@@ -194,13 +198,14 @@
     }
 
     function takePhoto() {
-      const rect = video.getBoundingClientRect();
       const canvas = document.createElement('canvas');
-      canvas.width = rect.width * window.devicePixelRatio;
-      canvas.height = rect.height * window.devicePixelRatio;
+      // ขนาดจริงบัตรประชาชน 85.6mm x 53.98mm = อัตราส่วน ~1.586
+      const width = 800;
+      const height = Math.round(width / 1.586);
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-      ctx.drawImage(video, 0, 0, rect.width, rect.height);
+      ctx.drawImage(video, 0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/jpeg');
       previewImg.src = dataUrl;
       previewImg.style.display = 'block';
@@ -235,30 +240,32 @@
       image.src = previewImg.src;
     }
 
-    function generateAndShare() {
-      generateImage((dataUrl) => {
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = 'obisign.jpg';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    function generatePreview() {
+      generateImage();
+    }
 
-        fetch(dataUrl)
-          .then(res => res.blob())
-          .then(blob => {
-            const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              navigator.share({
-                title: 'Obisign',
-                text: 'ส่งภาพเซ็นรับรอง Obisign',
-                files: [file]
-              });
-            } else {
-              alert('แชร์สำเร็จแล้ว หรือเบราว์เซอร์ไม่รองรับการแชร์');
-            }
-          });
-      });
+    function downloadAndShare() {
+      const link = document.createElement('a');
+      link.href = finalDataUrl;
+      link.download = 'obisign.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      fetch(finalDataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+              title: 'Obisign',
+              text: 'ส่งภาพเซ็นรับรอง Obisign',
+              files: [file]
+            });
+          } else {
+            alert('แชร์สำเร็จแล้ว หรือเบราว์เซอร์ไม่รองรับการแชร์');
+          }
+        });
     }
   </script>
 </body>
