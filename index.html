@@ -115,7 +115,7 @@
     </div>
 
     <img id="preview-img" src="" alt="ภาพบัตรประชาชน" />
-    <div class="info-text">ยืนยันแบ่งชำระกับออนไลน์โบรคเกอร์ประกันภัย</div>
+    <div class="info-text">ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย</div>
     <div class="label">สำเนาถูกต้อง</div>
 
     <div class="signature-pad" id="signatureSection">
@@ -131,9 +131,9 @@
       <h3>ภาพตัวอย่าง:</h3>
       <img id="finalImage" src="" alt="รวมภาพ" />
       <div class="buttons" id="shareSection">
-        <button onclick="location.reload()">🔄 เริ่มใหม่</button>
-        
-<button onclick="downloadAndShare()">💾📤 บันทึกและแชร์</button>
+        <button onclick="downloadAndShare()">💾📤 บันทึกและแชร์</button>
+
+<button onclick="location.reload()">🔄 เริ่มใหม่</button>
 
       </div>
     </div>
@@ -259,7 +259,7 @@
         ctx.font = '16px sans-serif';
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
-        ctx.fillText('ยืนยันแบ่งชำระกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
+        ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
         ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
         ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
         const dataUrl = canvas.toDataURL('image/jpeg');
@@ -290,7 +290,7 @@
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             navigator.share({
               title: 'Obisign',
-              text: 'เซ็นรับรองบัตรแล้ว',
+              text: 'ส่งภาพเซ็นรับรอง Obisign',
               files: [file]
             });
           } else {
@@ -298,6 +298,17 @@
           }
         });
     }
-  </script>
+  
+signatureCanvas.addEventListener("touchstart", function (e) {
+  if (e.target === signatureCanvas) e.preventDefault();
+}, { passive: false });
+
+signatureCanvas.addEventListener("touchmove", function (e) {
+  if (e.target === signatureCanvas) e.preventDefault();
+}, { passive: false });
+
+</script>
+
+
 </body>
 </html>
