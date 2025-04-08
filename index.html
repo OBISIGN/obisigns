@@ -198,8 +198,7 @@
     }
 
     function extractNameFromImage(imageDataUrl) {
-      // ตรงนี้สามารถเชื่อมต่อ OCR API หรือใช้ OCR.js ได้หากต้องการ
-      // ตัวอย่างจำลองชื่อ (ต้องแทนที่ด้วยระบบ AI OCR จริงใน production)
+      // จำลองชื่อจาก OCR — ในระบบจริงควรใช้ Tesseract.js หรือ Google Cloud Vision API
       extractedName = 'นายสมชาย ใจดี';
       fullNameDisplay.innerText = extractedName;
     }
@@ -235,7 +234,6 @@
         ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + 30);
         ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + 60);
         ctx.drawImage(signatureCanvas, 0, image.height + 80, canvas.width, 150);
-
         if (extractedName) {
           ctx.fillText(extractedName, canvas.width / 2, image.height + 250);
         }
