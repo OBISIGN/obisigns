@@ -6,13 +6,11 @@
   <title>Obisign - เซ็นรับรองสำเนาถูกต้อง</title>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       font-family: sans-serif;
       background-color: #fff;
-      width: 100%;
-      height: 100%;
       box-sizing: border-box;
+      width: 100%; height: 100%;
       overflow-x: hidden;
       overflow-y: auto;
       touch-action: pan-y;
@@ -21,8 +19,19 @@
       padding: 1rem;
       max-width: 100%;
     }
-    video {
+    .video-wrapper {
+      position: relative;
       width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1.586; /* อัตราส่วนบัตรประชาชน */
+      background: #000;
+      margin: auto;
+    }
+    video {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       border-radius: 6px;
     }
     #preview-img {
@@ -36,7 +45,6 @@
     .signature-pad {
       margin: 1rem auto;
       width: 100%;
-      max-width: 100%;
       height: 200px;
       border: 2px solid #333;
       background-color: #f9f9f9;
@@ -86,7 +94,10 @@
       <button onclick="takePhoto()">📸 ถ่ายภาพ</button>
     </div>
 
-    <video id="video" autoplay playsinline></video>
+    <div class="video-wrapper">
+      <video id="video" autoplay playsinline></video>
+    </div>
+
     <img id="preview-img" src="" alt="ภาพบัตรประชาชน" />
     <div class="info-text">ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย</div>
     <div class="label">สำเนาถูกต้อง</div>
@@ -97,8 +108,7 @@
 
     <div class="buttons">
       <button onclick="clearSignature()">ลบลายเซ็น</button>
-      <button onclick="generateAndDownload()">บันทึกลงเครื่อง</button>
-      <button onclick="shareImage()">📤 แชร์ภาพเข้าไลน์</button>
+      <button onclick="generateAndShare()">💾📤 บันทึกและแชร์</button>
     </div>
 
     <div id="result">
@@ -151,12 +161,24 @@
     }
     function drawEnd() { drawing = false; }
 
+    // รองรับเมาส์
     signatureCanvas.addEventListener('mousedown', drawStart);
     signatureCanvas.addEventListener('mousemove', drawMove);
     signatureCanvas.addEventListener('mouseup', drawEnd);
-    signatureCanvas.addEventListener('touchstart', drawStart);
-    signatureCanvas.addEventListener('touchmove', drawMove);
+
+    // รองรับนิ้วสัมผัส
+    signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
+    signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
     signatureCanvas.addEventListener('touchend', drawEnd);
+
+    // 🔒 ป้องกัน scroll ระหว่างเซ็น
+    signatureCanvas.addEventListener('touchstart', function(e) {
+      if (e.target === signatureCanvas) e.preventDefault();
+    }, { passive: false });
+
+    signatureCanvas.addEventListener('touchmove', function(e) {
+      if (e.target === signatureCanvas) e.preventDefault();
+    }, { passive: false });
 
     function clearSignature() {
       signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
@@ -220,7 +242,7 @@
       image.src = previewImg.src;
     }
 
-    function generateAndDownload() {
+    function generateAndShare() {
       generateImage((dataUrl) => {
         const link = document.createElement('a');
         link.href = dataUrl;
@@ -228,25 +250,22 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-      });
-    }
 
-    function shareImage() {
-      if (!finalDataUrl) return alert("กรุณาบันทึกรูปก่อนแชร์");
-      fetch(finalDataUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({
-              title: 'Obisign',
-              text: 'ส่งภาพเซ็นรับรอง Obisign',
-              files: [file]
-            });
-          } else {
-            alert('เบราว์เซอร์ไม่รองรับการแชร์ไฟล์');
-          }
-        });
+        fetch(dataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              navigator.share({
+                title: 'Obisign',
+                text: 'ส่งภาพเซ็นรับรอง Obisign',
+                files: [file]
+              });
+            } else {
+              alert('แชร์สำเร็จแล้ว หรือเบราว์เซอร์ไม่รองรับการแชร์');
+            }
+          });
+      });
     }
   </script>
 </body>
