@@ -83,7 +83,7 @@
       padding: 0.7rem 1.2rem;
       font-size: 1rem;
     }
-      .overlay-frame {
+    .overlay-frame {
       position: absolute;
       top: 50%;
       left: 50%;
@@ -211,24 +211,26 @@
     }
 
     function takePhoto() {
-  const canvas = document.createElement('canvas');
-  const videoWidth = video.videoWidth;
-  const videoHeight = video.videoHeight;
-  const aspectRatio = 1.586; // อัตราส่วนบัตรประชาชน
+      const canvas = document.createElement('canvas');
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      const aspectRatio = 1.586;
 
-  // คำนวณความสูงตามอัตราส่วนบัตรประชาชน
-  const targetHeight = videoWidth / aspectRatio;
-  const cropY = (videoHeight - targetHeight) / 2;
+      const targetHeight = videoWidth / aspectRatio;
+      const cropY = (videoHeight - targetHeight) / 2;
 
-  canvas.width = videoWidth;
-  canvas.height = targetHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
+      canvas.width = videoWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
 
-  const dataUrl = canvas.toDataURL('image/jpeg');
-  previewImg.src = dataUrl;
-  previewImg.style.display = 'block';
-  stopCamera();
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
+
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      previewImg.src = dataUrl;
+      previewImg.style.display = 'block';
+      stopCamera();
     }
 
     function generateImage(callback) {
