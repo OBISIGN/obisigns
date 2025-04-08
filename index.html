@@ -59,7 +59,7 @@
       text-align: center;
       margin-top: 1rem;
     }
-    .info-text, .label, .name-label {
+    .info-text, .label {
       text-align: center;
       font-size: 16px;
       margin-top: 8px;
@@ -106,8 +106,6 @@
       <canvas id="signatureCanvas"></canvas>
     </div>
 
-    <div class="name-label" id="fullNameDisplay"></div>
-
     <div class="buttons">
       <button onclick="clearSignature()">ลบลายเซ็น</button>
       <button onclick="generateAndShare()">💾📤 บันทึกและแชร์</button>
@@ -125,11 +123,9 @@
     const signatureCtx = signatureCanvas.getContext('2d');
     const finalImage = document.getElementById('finalImage');
     const result = document.getElementById('result');
-    const fullNameDisplay = document.getElementById('fullNameDisplay');
     let currentStream = null;
     let drawing = false;
     let finalDataUrl = null;
-    let extractedName = '';
 
     function resizeCanvas() {
       signatureCanvas.width = signatureCanvas.offsetWidth;
@@ -197,23 +193,18 @@
       }
     }
 
-    function extractNameFromImage(imageDataUrl) {
-      // จำลองชื่อจาก OCR — ในระบบจริงควรใช้ Tesseract.js หรือ Google Cloud Vision API
-      extractedName = 'นายสมชาย ใจดี';
-      fullNameDisplay.innerText = extractedName;
-    }
-
     function takePhoto() {
+      const rect = video.getBoundingClientRect();
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      ctx.drawImage(video, 0, 0, rect.width, rect.height);
       const dataUrl = canvas.toDataURL('image/jpeg');
       previewImg.src = dataUrl;
       previewImg.style.display = 'block';
       stopCamera();
-      extractNameFromImage(dataUrl);
     }
 
     function generateImage(callback) {
@@ -221,7 +212,7 @@
       image.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = image.width;
-        canvas.height = image.height + 300;
+        canvas.height = image.height + 250;
         const ctx = canvas.getContext('2d');
 
         ctx.fillStyle = "white";
@@ -234,9 +225,6 @@
         ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + 30);
         ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + 60);
         ctx.drawImage(signatureCanvas, 0, image.height + 80, canvas.width, 150);
-        if (extractedName) {
-          ctx.fillText(extractedName, canvas.width / 2, image.height + 250);
-        }
 
         const dataUrl = canvas.toDataURL('image/jpeg');
         finalImage.src = dataUrl;
