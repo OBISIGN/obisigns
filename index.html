@@ -83,6 +83,18 @@
       padding: 0.7rem 1.2rem;
       font-size: 1rem;
     }
+      .overlay-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90%;
+      aspect-ratio: 1.586;
+      transform: translate(-50%, -50%);
+      border: 2px dashed #00ff00;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
@@ -90,6 +102,7 @@
     <h2 style="text-align: center;">Obisign - เซ็นรับรองสำเนาถูกต้อง</h2>
 
     <div class="video-wrapper">
+      <div class="overlay-frame"></div>
       <video id="video" autoplay playsinline></video>
     </div>
 
@@ -198,15 +211,24 @@
     }
 
     function takePhoto() {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const dataUrl = canvas.toDataURL('image/jpeg');
-      previewImg.src = dataUrl;
-      previewImg.style.display = 'block';
-      stopCamera();
+  const canvas = document.createElement('canvas');
+  const videoWidth = video.videoWidth;
+  const videoHeight = video.videoHeight;
+  const aspectRatio = 1.586; // อัตราส่วนบัตรประชาชน
+
+  // คำนวณความสูงตามอัตราส่วนบัตรประชาชน
+  const targetHeight = videoWidth / aspectRatio;
+  const cropY = (videoHeight - targetHeight) / 2;
+
+  canvas.width = videoWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
+
+  const dataUrl = canvas.toDataURL('image/jpeg');
+  previewImg.src = dataUrl;
+  previewImg.style.display = 'block';
+  stopCamera();
     }
 
     function generateImage(callback) {
