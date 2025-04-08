@@ -13,10 +13,13 @@
       width: 100%;
       height: 100%;
       box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
     .container {
       touch-action: pinch-zoom;
       padding: 1rem;
+      max-width: 100%;
     }
     .camera-frame {
       position: relative;
@@ -118,13 +121,12 @@
 
     <div class="buttons">
       <button onclick="clearSignature()">ลบลายเซ็น</button>
-      <button onclick="generateAndSend()">บันทึกและส่งเข้าไลน์</button>
+      <button onclick="generateAndDownload()">บันทึกลงเครื่อง</button>
     </div>
 
     <div id="result">
-      <div>📌 กดค้างที่ภาพด้านล่างเพื่อบันทึกลงมือถือ หรือแชร์ผ่านไลน์</div>
+      <div>📌 กดค้างที่ภาพด้านล่างเพื่อบันทึกลงมือถือ</div>
       <img id="finalImage" src="" alt="รวมภาพ A4" />
-      <div id="save-note">(หากไม่สามารถแชร์อัตโนมัติได้ ให้บันทึกรูปแล้วส่งเอง)</div>
     </div>
   </div>
 
@@ -202,7 +204,7 @@
       previewImg.style.display = 'block';
     }
 
-    function generateAndSend() {
+    function generateAndDownload() {
       const image = new Image();
       image.onload = () => {
         const canvas = document.createElement('canvas');
@@ -226,11 +228,13 @@
         const dataUrl = canvas.toDataURL('image/jpeg');
         finalImage.src = dataUrl;
         result.style.display = 'block';
-        window.scrollTo(0, document.body.scrollHeight);
 
-        const msg = encodeURIComponent("\ud83d\udcc4 สำเนาบัตรประชาชนพร้อมลายเซ็นจาก Obisign");
-        const lineUrl = "https://line.me/R/msg/text/?" + msg;
-        window.open(lineUrl, "_blank");
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'obisign.jpg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       };
       image.src = previewImg.src;
     }
