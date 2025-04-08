@@ -214,18 +214,14 @@
       const canvas = document.createElement('canvas');
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
-      const aspectRatio = 1.586;
-
-      const targetHeight = videoWidth / aspectRatio;
-      const cropY = (videoHeight - targetHeight) / 2;
 
       canvas.width = videoWidth;
-      canvas.height = targetHeight;
+      canvas.height = videoHeight;
       const ctx = canvas.getContext('2d');
 
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
+      ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
 
       const dataUrl = canvas.toDataURL('image/jpeg');
       previewImg.src = dataUrl;
@@ -234,42 +230,37 @@
     }
 
     function generateImage(callback) {
-  const image = new Image();
-  image.onload = () => {
-    const canvas = document.createElement('canvas');
-    const margin = 50;
-    const sidePadding = 40;
-    const textSpacing = 30;
-    const signatureHeight = 150;
-    const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const margin = 50;
+        const sidePadding = 40;
+        const textSpacing = 30;
+        const signatureHeight = 150;
+        const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
 
-    canvas.width = image.width;
-    canvas.height = totalHeight;
-    const ctx = canvas.getContext('2d');
+        canvas.width = image.width;
+        canvas.height = totalHeight;
+        const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // วางภาพอยู่ด้านบนแบบมี margin
-    ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
+        ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
+        ctx.font = '16px sans-serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
+        ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
+        ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
 
-    // ข้อความลายน้ำและสำเนาถูกต้อง
-    ctx.font = '16px sans-serif';
-    ctx.fillStyle = 'black';
-    ctx.textAlign = 'center';
-    ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
-    ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
-
-    // ลายเซ็นด้านล่าง
-    ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
-
-    const dataUrl = canvas.toDataURL('image/jpeg');
-    finalImage.src = dataUrl;
-    result.style.display = 'block';
-    finalDataUrl = dataUrl;
-    if (callback) callback(dataUrl);
-  };
-  image.src = previewImg.src;
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        finalImage.src = dataUrl;
+        result.style.display = 'block';
+        finalDataUrl = dataUrl;
+        if (callback) callback(dataUrl);
+      };
+      image.src = previewImg.src;
     }
 
     function generatePreview() {
