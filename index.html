@@ -9,11 +9,8 @@
       margin: 0; padding: 0;
       font-family: sans-serif;
       background-color: #fff;
-      box-sizing: border-box;
       width: 100%; height: 100%;
       overflow-x: hidden;
-      overflow-y: auto;
-      touch-action: pan-y;
     }
     .container {
       padding: 1rem;
@@ -58,7 +55,6 @@
       display: none;
       width: 100%;
       height: auto;
-      object-fit: contain;
       margin-top: 1rem;
       border: 1px solid #ccc;
     }
@@ -73,7 +69,6 @@
     canvas {
       width: 100%;
       height: 100%;
-      touch-action: none;
     }
     .buttons {
       text-align: center;
@@ -108,7 +103,6 @@
 <body>
   <div class="container">
     <h2 style="text-align: center;">การรับรองสำเนาบัตร</h2>
-
     <div class="video-wrapper">
       <div class="overlay-frame"></div>
       <video id="video" autoplay playsinline></video>
@@ -124,7 +118,7 @@
     <div class="info-text">ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย</div>
     <div class="label">สำเนาถูกต้อง</div>
 
-    <div class="signature-pad">
+    <div class="signature-pad" id="signatureSection">
       <canvas id="signatureCanvas"></canvas>
     </div>
 
@@ -136,7 +130,7 @@
     <div id="result">
       <h3>ภาพตัวอย่าง:</h3>
       <img id="finalImage" src="" alt="รวมภาพ" />
-      <div class="buttons">
+      <div class="buttons" id="shareSection">
         <button onclick="downloadAndShare()">💾📤 บันทึกและแชร์</button>
       </div>
     </div>
@@ -153,6 +147,11 @@
     let currentStream = null;
     let drawing = false;
     let finalDataUrl = null;
+
+    function scrollToElement(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
 
     function resizeCanvas() {
       signatureCanvas.width = signatureCanvas.offsetWidth;
@@ -195,8 +194,6 @@
     signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
     signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
     signatureCanvas.addEventListener('touchend', drawEnd);
-    signatureCanvas.addEventListener('touchstart', e => { if (e.target === signatureCanvas) e.preventDefault(); }, { passive: false });
-    signatureCanvas.addEventListener('touchmove', e => { if (e.target === signatureCanvas) e.preventDefault(); }, { passive: false });
 
     function clearSignature() {
       signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
@@ -226,22 +223,19 @@
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
       const aspectRatio = 1.586;
-
       const targetHeight = videoWidth / aspectRatio;
       const cropY = (videoHeight - targetHeight) / 2;
-
       canvas.width = videoWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
-
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
-
       const dataUrl = canvas.toDataURL('image/jpeg');
       previewImg.src = dataUrl;
       previewImg.style.display = 'block';
       stopCamera();
+      scrollToElement("signatureSection");
     }
 
     function generateImage(callback) {
@@ -253,14 +247,11 @@
         const textSpacing = 30;
         const signatureHeight = 150;
         const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
-
         canvas.width = image.width;
         canvas.height = totalHeight;
         const ctx = canvas.getContext('2d');
-
         ctx.fillStyle = "white";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
         ctx.font = '16px sans-serif';
         ctx.fillStyle = 'black';
@@ -268,11 +259,11 @@
         ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
         ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
         ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
-
         const dataUrl = canvas.toDataURL('image/jpeg');
         finalImage.src = dataUrl;
         result.style.display = 'block';
         finalDataUrl = dataUrl;
+        scrollToElement("shareSection");
         if (callback) callback(dataUrl);
       };
       image.src = previewImg.src;
@@ -289,7 +280,6 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       fetch(finalDataUrl)
         .then(res => res.blob())
         .then(blob => {
