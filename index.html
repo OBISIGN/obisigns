@@ -23,7 +23,7 @@
       position: relative;
       width: 100%;
       max-width: 400px;
-      aspect-ratio: 1.586; /* อัตราส่วนบัตรประชาชน */
+      aspect-ratio: 1.586;
       background: #000;
       margin: auto;
     }
@@ -59,7 +59,7 @@
       text-align: center;
       margin-top: 1rem;
     }
-    .info-text, .label {
+    .info-text, .label, .name-label {
       text-align: center;
       font-size: 16px;
       margin-top: 8px;
@@ -89,13 +89,13 @@
   <div class="container">
     <h2 style="text-align: center;">Obisign - เซ็นรับรองสำเนาถูกต้อง</h2>
 
+    <div class="video-wrapper">
+      <video id="video" autoplay playsinline></video>
+    </div>
+
     <div class="buttons">
       <button onclick="startCamera()">เปิดกล้อง</button>
       <button onclick="takePhoto()">📸 ถ่ายภาพ</button>
-    </div>
-
-    <div class="video-wrapper">
-      <video id="video" autoplay playsinline></video>
     </div>
 
     <img id="preview-img" src="" alt="ภาพบัตรประชาชน" />
@@ -105,6 +105,8 @@
     <div class="signature-pad">
       <canvas id="signatureCanvas"></canvas>
     </div>
+
+    <div class="name-label" id="fullNameDisplay"></div>
 
     <div class="buttons">
       <button onclick="clearSignature()">ลบลายเซ็น</button>
@@ -123,9 +125,11 @@
     const signatureCtx = signatureCanvas.getContext('2d');
     const finalImage = document.getElementById('finalImage');
     const result = document.getElementById('result');
+    const fullNameDisplay = document.getElementById('fullNameDisplay');
     let currentStream = null;
     let drawing = false;
     let finalDataUrl = null;
+    let extractedName = '';
 
     function resizeCanvas() {
       signatureCanvas.width = signatureCanvas.offsetWidth;
@@ -161,24 +165,14 @@
     }
     function drawEnd() { drawing = false; }
 
-    // รองรับเมาส์
     signatureCanvas.addEventListener('mousedown', drawStart);
     signatureCanvas.addEventListener('mousemove', drawMove);
     signatureCanvas.addEventListener('mouseup', drawEnd);
-
-    // รองรับนิ้วสัมผัส
     signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
     signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
     signatureCanvas.addEventListener('touchend', drawEnd);
-
-    // 🔒 ป้องกัน scroll ระหว่างเซ็น
-    signatureCanvas.addEventListener('touchstart', function(e) {
-      if (e.target === signatureCanvas) e.preventDefault();
-    }, { passive: false });
-
-    signatureCanvas.addEventListener('touchmove', function(e) {
-      if (e.target === signatureCanvas) e.preventDefault();
-    }, { passive: false });
+    signatureCanvas.addEventListener('touchstart', e => { if (e.target === signatureCanvas) e.preventDefault(); }, { passive: false });
+    signatureCanvas.addEventListener('touchmove', e => { if (e.target === signatureCanvas) e.preventDefault(); }, { passive: false });
 
     function clearSignature() {
       signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
@@ -203,15 +197,24 @@
       }
     }
 
+    function extractNameFromImage(imageDataUrl) {
+      // ตรงนี้สามารถเชื่อมต่อ OCR API หรือใช้ OCR.js ได้หากต้องการ
+      // ตัวอย่างจำลองชื่อ (ต้องแทนที่ด้วยระบบ AI OCR จริงใน production)
+      extractedName = 'นายสมชาย ใจดี';
+      fullNameDisplay.innerText = extractedName;
+    }
+
     function takePhoto() {
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
-      previewImg.src = canvas.toDataURL('image/jpeg');
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      previewImg.src = dataUrl;
       previewImg.style.display = 'block';
       stopCamera();
+      extractNameFromImage(dataUrl);
     }
 
     function generateImage(callback) {
@@ -219,7 +222,7 @@
       image.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = image.width;
-        canvas.height = image.height + 250;
+        canvas.height = image.height + 300;
         const ctx = canvas.getContext('2d');
 
         ctx.fillStyle = "white";
@@ -232,6 +235,10 @@
         ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + 30);
         ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + 60);
         ctx.drawImage(signatureCanvas, 0, image.height + 80, canvas.width, 150);
+
+        if (extractedName) {
+          ctx.fillText(extractedName, canvas.width / 2, image.height + 250);
+        }
 
         const dataUrl = canvas.toDataURL('image/jpeg');
         finalImage.src = dataUrl;
