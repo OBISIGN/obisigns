@@ -137,6 +137,7 @@
     const signatureCtx = signatureCanvas.getContext('2d');
     const finalImage = document.getElementById('finalImage');
     const result = document.getElementById('result');
+    let currentStream = null;
     let drawing = false;
 
     function resizeCanvas() {
@@ -187,11 +188,20 @@
     function startCamera() {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         .then(stream => {
+          currentStream = stream;
           video.srcObject = stream;
         })
         .catch(err => {
           alert('ไม่สามารถเปิดกล้อง: ' + err);
         });
+    }
+
+    function stopCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+        video.srcObject = null;
+      }
     }
 
     function takePhoto() {
@@ -202,6 +212,7 @@
       ctx.drawImage(video, 0, 0);
       previewImg.src = canvas.toDataURL('image/jpeg');
       previewImg.style.display = 'block';
+      stopCamera();
     }
 
     function generateAndDownload() {
