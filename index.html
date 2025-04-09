@@ -204,11 +204,9 @@
     signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
     signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
     signatureCanvas.addEventListener('touchend', drawEnd);
-
     signatureCanvas.addEventListener("touchstart", function (e) {
       if (e.target === signatureCanvas) e.preventDefault();
     }, { passive: false });
-
     signatureCanvas.addEventListener("touchmove", function (e) {
       if (e.target === signatureCanvas) e.preventDefault();
     }, { passive: false });
@@ -259,11 +257,6 @@
     }
 
     function generateImage(callback) {
-      if (!previewImg.src) {
-        alert("กรุณาถ่ายภาพก่อนดูตัวอย่าง");
-        return;
-      }
-
       const image = new Image();
       image.onload = () => {
         const canvas = document.createElement('canvas');
@@ -275,15 +268,23 @@
         canvas.width = image.width;
         canvas.height = totalHeight;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "white";
+
+        ctx.fillStyle = "#f2f2f2";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(sidePadding, margin, canvas.width - sidePadding * 2, image.height);
+
+        ctx.drawImage(image, sidePadding + 10, margin + 10, canvas.width - sidePadding * 2 - 20, image.height - 20);
+
         ctx.font = '16px sans-serif';
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
         ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
         ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
+
         ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
+
         const dataUrl = canvas.toDataURL('image/jpeg');
         finalImage.src = dataUrl;
         result.style.display = 'block';
@@ -303,7 +304,6 @@
         alert("ยังไม่มีภาพตัวอย่าง กรุณากด 'ดูตัวอย่างก่อนแชร์'");
         return;
       }
-
       const link = document.createElement('a');
       link.href = finalDataUrl;
       link.download = 'obisign.jpg';
