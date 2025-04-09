@@ -238,7 +238,7 @@ function downloadAndShare() {
   fetch(finalDataUrl).then(res => res.blob()).then(blob => {
     const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ title: 'Obisign', text: 'ส่งภาพเซ็นรับรอง Obisign', files: [file] });
+      navigator.share({ title: 'Obisign', text: 'รับรองสำเนาบัตรเรียบร้อยแล้ว', files: [file] });
     } else {
       alert('ไฟล์ถูกบันทึกแล้ว กรุณาแชร์ด้วยวิธีอื่น');
     }
