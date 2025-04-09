@@ -154,6 +154,7 @@ function resizeCanvas() {
   signatureCanvas.width = signatureCanvas.offsetWidth * ratio;
   signatureCanvas.height = signatureCanvas.offsetHeight * ratio;
   signatureCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  signatureCtx.strokeStyle = 'blue';
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -173,10 +174,11 @@ function getPosition(e) {
 }
 
 function drawStart(e) {
-  signatureCtx.beginPath();
-  const pos = getPosition(e);
-  signatureCtx.moveTo(pos.x, pos.y);
+  signatureCtx.strokeStyle = 'blue';
   drawing = true;
+  const pos = getPosition(e);
+  signatureCtx.beginPath();
+  signatureCtx.moveTo(pos.x, pos.y);
 }
 function drawMove(e) {
   if (!drawing) return;
@@ -198,6 +200,7 @@ signatureCanvas.addEventListener("touchmove", e => { e.preventDefault(); }, { pa
 
 function clearSignature() {
   signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+  signatureCtx.strokeStyle = 'blue';
 }
 
 let currentStream = null;
