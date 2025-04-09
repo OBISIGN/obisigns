@@ -1,75 +1,249 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>Obisign OCR</title>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
+  <title>Obisign - การรับรองสำเนาบัตร</title>
   <style>
-    body { font-family: sans-serif; padding: 1rem; }
-    video, canvas, img { max-width: 100%; }
-    .info { margin-top: 1rem; }
-    .ocr-result { background: #eef; padding: 1rem; margin-top: 1rem; }
+    html, body { margin: 0; padding: 0; font-family: sans-serif; background-color: #fff; width: 100%; height: 100%; overflow-x: hidden; }
+    .container { padding: 1rem; max-width: 100%; }
+    .video-wrapper { position: relative; width: 100%; max-width: 400px; aspect-ratio: 1.586; background: #000; margin: auto; }
+    video { position: absolute; width: 100%; height: 100%; object-fit: cover; }
+    .overlay-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px dashed #00ff00; pointer-events: none; z-index: 10; }
+    .frame-instruction { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 16px; color: #00ff00; font-weight: bold; text-shadow: 0 0 5px #000; z-index: 11; }
+    #preview-img { display: none; width: 100%; margin-top: 1rem; border: 1px solid #ccc; }
+    .signature-pad { margin: 1rem auto; width: 100%; height: 200px; border: 2px solid #333; background-color: #f9f9f9; touch-action: none; }
+    canvas { width: 100%; height: 100%; }
+    .buttons { text-align: center; margin-top: 1rem; }
+    .info-text, .label { text-align: center; font-size: 16px; margin-top: 8px; color: #000; }
+    .label { font-weight: bold; font-size: 18px; }
+    #result { display: none; text-align: center; margin-top: 1rem; }
+    #result img { max-width: 100%; border: 1px solid #ccc; }
+    button { margin: 0.5rem; padding: 0.7rem 1.2rem; font-size: 1rem; cursor: pointer; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2 style="text-align: center;">การรับรองสำเนาบัตร</h2>
+    <div class="video-wrapper">
+      <div class="overlay-frame"></div>
+      <video id="video" autoplay playsinline></video>
+      <div class="frame-instruction">วางบัตรให้อยู่ในกรอบ</div>
+    </div>
 
-<h2>Obisign OCR - อ่านชื่อและเลขบัตร</h2>
+    <div class="buttons">
+      <button onclick="startCamera()">📷 เปิดกล้อง</button>
+      <button onclick="takePhoto()">📸 ถ่ายภาพ</button>
+    </div>
 
-<video id="video" autoplay playsinline style="border:1px solid #000;"></video><br/>
-<button onclick="startCamera()">📷 เปิดกล้อง</button>
-<button onclick="captureImage()">📸 ถ่ายภาพ</button>
+    <img id="preview-img" src="" alt="ภาพบัตรประชาชน" />
+    <div class="info-text">ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย</div>
+    <div class="label">สำเนาถูกต้อง</div>
 
-<canvas id="canvas" style="display:none;"></canvas>
-<img id="capturedImage" style="margin-top:1rem; display:none;" />
+    <div class="signature-pad" id="signatureSection">
+      <canvas id="signatureCanvas"></canvas>
+    </div>
 
-<div class="info">
-  <button onclick="runOCR()">🔍 อ่านข้อความจากภาพ</button>
-</div>
+    <div class="buttons">
+      <button onclick="clearSignature()">🗑️ ลบลายเซ็น</button>
+      <button onclick="generatePreview()">🔍 ดูตัวอย่างก่อนแชร์</button>
+    </div>
 
-<div class="ocr-result" id="ocrText" style="display:none;">
-  <h3>📄 ข้อมูลที่อ่านได้:</h3>
-  <pre id="textOutput"></pre>
-  <p><strong>เลขบัตร:</strong> <span id="idCard"></span></p>
-  <p><strong>ชื่อ:</strong> <span id="fullName"></span></p>
-</div>
+    <div id="result">
+      <h3>ภาพตัวอย่าง:</h3>
+      <img id="finalImage" src="" alt="รวมภาพ" />
+      <div class="buttons" id="shareSection">
+        <button onclick="location.reload()">🔄 เริ่มใหม่</button>
+        <button onclick="downloadAndShare()">💾📤 บันทึกและแชร์</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const img = document.getElementById('capturedImage');
-const ctx = canvas.getContext('2d');
+const previewImg = document.getElementById('preview-img');
+const signatureCanvas = document.getElementById('signatureCanvas');
+const signatureCtx = signatureCanvas.getContext('2d');
+signatureCtx.strokeStyle = "blue";
+let drawing = false;
+let finalDataUrl = null;
 
+function resizeCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  signatureCanvas.width = signatureCanvas.offsetWidth * ratio;
+  signatureCanvas.height = signatureCanvas.offsetHeight * ratio;
+  signatureCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  signatureCtx.strokeStyle = 'blue';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function getPosition(e) {
+  const rect = signatureCanvas.getBoundingClientRect();
+  if (e.touches) {
+    return {
+      x: e.touches[0].clientX - rect.left,
+      y: e.touches[0].clientY - rect.top
+    };
+  }
+  return {
+    x: e.offsetX,
+    y: e.offsetY
+  };
+}
+function drawStart(e) {
+  signatureCtx.strokeStyle = 'blue';
+  drawing = true;
+  const pos = getPosition(e);
+  signatureCtx.beginPath();
+  signatureCtx.moveTo(pos.x, pos.y);
+}
+function drawMove(e) {
+  if (!drawing) return;
+  const pos = getPosition(e);
+  signatureCtx.lineTo(pos.x, pos.y);
+  signatureCtx.stroke();
+}
+function drawEnd() { drawing = false; }
+signatureCanvas.addEventListener('mousedown', drawStart);
+signatureCanvas.addEventListener('mousemove', drawMove);
+signatureCanvas.addEventListener('mouseup', drawEnd);
+signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
+signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
+signatureCanvas.addEventListener('touchend', drawEnd);
+signatureCanvas.addEventListener("touchstart", e => { e.preventDefault(); }, { passive: false });
+signatureCanvas.addEventListener("touchmove", e => { e.preventDefault(); }, { passive: false });
+
+function clearSignature() {
+  signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+  signatureCtx.strokeStyle = 'blue';
+}
+
+let currentStream = null;
 function startCamera() {
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(stream => video.srcObject = stream)
-    .catch(err => alert("ไม่สามารถเข้าถึงกล้อง"));
+    .then(stream => {
+      currentStream = stream;
+      video.srcObject = stream;
+    })
+    .catch(err => alert("ไม่สามารถเปิดกล้อง: " + err));
+}
+function stopCamera() {
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+    currentStream = null;
+  }
 }
 
-function captureImage() {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0);
+function takePhoto() {
+  const canvas = document.createElement('canvas');
+  const videoWidth = video.videoWidth;
+  const videoHeight = video.videoHeight;
+  const aspectRatio = 1.586;
+  const targetHeight = videoWidth / aspectRatio;
+  const cropY = (videoHeight - targetHeight) / 2;
+  canvas.width = videoWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
   const dataUrl = canvas.toDataURL('image/jpeg');
-  img.src = dataUrl;
-  img.style.display = 'block';
+  previewImg.src = dataUrl;
+  previewImg.style.display = 'block';
+  stopCamera();
+  document.getElementById("signatureSection").scrollIntoView({ behavior: "smooth" });
 }
 
-function runOCR() {
-  document.getElementById("ocrText").style.display = "block";
-  Tesseract.recognize(img.src, 'tha+eng', {
-    logger: m => console.log(m)
-  }).then(({ data: { text } }) => {
-    document.getElementById("textOutput").textContent = text;
+function isImageBlurry(img, threshold = 15) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  ctx.drawImage(img, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  let total = 0;
+  let count = 0;
+  for (let i = 0; i < imageData.length; i += 40) {
+    const r = imageData[i];
+    const g = imageData[i + 1];
+    const b = imageData[i + 2];
+    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+    total += gray;
+    count++;
+  }
+  const avg = total / count;
+  let variance = 0;
+  for (let i = 0; i < imageData.length; i += 40) {
+    const r = imageData[i];
+    const g = imageData[i + 1];
+    const b = imageData[i + 2];
+    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+    variance += Math.pow(gray - avg, 2);
+  }
+  const sharpness = variance / count;
+  return sharpness < threshold;
+}
 
-    const idMatch = text.match(/\d{13}/);
-    const nameMatch = text.match(/ชื่อ[\s\S]{1,30}/);
+function generateImage(callback) {
+  const image = new Image();
+  image.onload = () => {
+    if (isImageBlurry(image)) {
+      alert("ภาพที่ถ่ายไม่ชัด กรุณาถ่ายใหม่ให้ชัดเจนก่อนบันทึก");
+      return;
+    }
 
-    document.getElementById("idCard").textContent = idMatch ? idMatch[0] : "ไม่พบ";
-    document.getElementById("fullName").textContent = nameMatch ? nameMatch[0].replace("ชื่อ", "").trim() : "ไม่พบ";
+    const canvas = document.createElement('canvas');
+    const margin = 50;
+    const sidePadding = 20;
+    const textSpacing = 30;
+    const signatureHeight = 150;
+    const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
+    canvas.width = image.width;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
+    ctx.shadowBlur = 8;
+    ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
+    ctx.shadowColor = "transparent";
+
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
+    ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
+    ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
+
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    document.getElementById("finalImage").src = dataUrl;
+    document.getElementById("result").style.display = 'block';
+    finalDataUrl = dataUrl;
+    document.getElementById("shareSection").scrollIntoView({ behavior: "smooth" });
+    if (callback) callback(dataUrl);
+  };
+  image.src = previewImg.src;
+}
+function generatePreview() { generateImage(); }
+
+function downloadAndShare() {
+  if (!finalDataUrl) return alert("กรุณาดูตัวอย่างก่อนแชร์");
+  const link = document.createElement('a');
+  link.href = finalDataUrl;
+  link.download = 'obisign.jpg';
+  link.click();
+  fetch(finalDataUrl).then(res => res.blob()).then(blob => {
+    const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ title: 'Obisign', text: 'ส่งภาพเซ็นรับรอง Obisign', files: [file] });
+    } else {
+      alert('ไฟล์ถูกบันทึกแล้ว กรุณาแชร์ด้วยวิธีอื่น');
+    }
   });
 }
 </script>
-
 </body>
 </html>
