@@ -29,14 +29,12 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 6px;
     }
     .overlay-frame {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
       border: 2px dashed #00ff00;
-      box-sizing: border-box;
       pointer-events: none;
       z-index: 10;
     }
@@ -54,7 +52,6 @@
     #preview-img {
       display: none;
       width: 100%;
-      height: auto;
       margin-top: 1rem;
       border: 1px solid #ccc;
     }
@@ -138,194 +135,170 @@
     </div>
   </div>
 
-  <script>
-    const video = document.getElementById('video');
-    const previewImg = document.getElementById('preview-img');
-    const signatureCanvas = document.getElementById('signatureCanvas');
-    const signatureCtx = signatureCanvas.getContext('2d');
-    signatureCtx.strokeStyle = "blue";
-    const finalImage = document.getElementById('finalImage');
-    const result = document.getElementById('result');
-    let currentStream = null;
-    let drawing = false;
-    let finalDataUrl = null;
+<script>
+const video = document.getElementById('video');
+const previewImg = document.getElementById('preview-img');
+const signatureCanvas = document.getElementById('signatureCanvas');
+const signatureCtx = signatureCanvas.getContext('2d');
+signatureCtx.strokeStyle = "blue";
+let drawing = false;
+let finalDataUrl = null;
 
-    function scrollToElement(id) {
-      const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+function scrollToElement(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function resizeCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  signatureCanvas.width = signatureCanvas.offsetWidth * ratio;
+  signatureCanvas.height = signatureCanvas.offsetHeight * ratio;
+  signatureCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function getPosition(e) {
+  const rect = signatureCanvas.getBoundingClientRect();
+  if (e.touches) {
+    return {
+      x: e.touches[0].clientX - rect.left,
+      y: e.touches[0].clientY - rect.top
+    };
+  }
+  return {
+    x: e.offsetX,
+    y: e.offsetY
+  };
+}
+
+function drawStart(e) {
+  signatureCtx.beginPath();
+  const pos = getPosition(e);
+  signatureCtx.moveTo(pos.x, pos.y);
+  drawing = true;
+}
+function drawMove(e) {
+  if (!drawing) return;
+  const pos = getPosition(e);
+  signatureCtx.lineTo(pos.x, pos.y);
+  signatureCtx.stroke();
+}
+function drawEnd() {
+  drawing = false;
+}
+signatureCanvas.addEventListener('mousedown', drawStart);
+signatureCanvas.addEventListener('mousemove', drawMove);
+signatureCanvas.addEventListener('mouseup', drawEnd);
+signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
+signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
+signatureCanvas.addEventListener('touchend', drawEnd);
+signatureCanvas.addEventListener("touchstart", e => { e.preventDefault(); }, { passive: false });
+signatureCanvas.addEventListener("touchmove", e => { e.preventDefault(); }, { passive: false });
+
+function clearSignature() {
+  signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+}
+
+let currentStream = null;
+function startCamera() {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      currentStream = stream;
+      video.srcObject = stream;
+    })
+    .catch(err => alert("ไม่สามารถเปิดกล้อง: " + err));
+}
+
+function stopCamera() {
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+    currentStream = null;
+  }
+}
+
+function takePhoto() {
+  const canvas = document.createElement('canvas');
+  const videoWidth = video.videoWidth;
+  const videoHeight = video.videoHeight;
+  const aspectRatio = 1.586;
+  const targetHeight = videoWidth / aspectRatio;
+  const cropY = (videoHeight - targetHeight) / 2;
+  canvas.width = videoWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
+  const dataUrl = canvas.toDataURL('image/jpeg');
+  previewImg.src = dataUrl;
+  previewImg.style.display = 'block';
+  stopCamera();
+  scrollToElement("signatureSection");
+}
+
+function generateImage(callback) {
+  const image = new Image();
+  image.onload = () => {
+    const canvas = document.createElement('canvas');
+    const margin = 50;
+    const sidePadding = 20;
+    const textSpacing = 30;
+    const signatureHeight = 150;
+    const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
+    canvas.width = image.width;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
+    ctx.shadowBlur = 8;
+    ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
+    ctx.shadowColor = "transparent";
+
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
+    ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
+    ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
+
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    document.getElementById("finalImage").src = dataUrl;
+    document.getElementById("result").style.display = 'block';
+    finalDataUrl = dataUrl;
+    scrollToElement("shareSection");
+    if (callback) callback(dataUrl);
+  };
+  image.src = previewImg.src;
+}
+function generatePreview() {
+  generateImage();
+}
+
+function downloadAndShare() {
+  if (!finalDataUrl) return alert("กรุณาดูตัวอย่างก่อนแชร์");
+
+  const link = document.createElement('a');
+  link.href = finalDataUrl;
+  link.download = 'obisign.jpg';
+  link.click();
+
+  fetch(finalDataUrl).then(res => res.blob()).then(blob => {
+    const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({
+        title: 'Obisign',
+        text: 'ส่งภาพเซ็นรับรอง Obisign',
+        files: [file]
+      });
+    } else {
+      alert('ไฟล์ถูกบันทึกแล้ว กรุณาแชร์ด้วยวิธีอื่น');
     }
-
-    function resizeCanvas() {
-      const ratio = window.devicePixelRatio || 1;
-      signatureCanvas.width = signatureCanvas.offsetWidth * ratio;
-      signatureCanvas.height = signatureCanvas.offsetHeight * ratio;
-      signatureCanvas.style.width = signatureCanvas.offsetWidth + "px";
-      signatureCanvas.style.height = signatureCanvas.offsetHeight + "px";
-      signatureCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function getPosition(e) {
-      if (e.touches) {
-        return {
-          x: e.touches[0].clientX - signatureCanvas.getBoundingClientRect().left,
-          y: e.touches[0].clientY - signatureCanvas.getBoundingClientRect().top
-        };
-      }
-      return {
-        x: e.offsetX,
-        y: e.offsetY
-      };
-    }
-
-    function drawStart(e) {
-      signatureCtx.strokeStyle = 'blue';
-      drawing = true;
-      const pos = getPosition(e);
-      signatureCtx.beginPath();
-      signatureCtx.moveTo(pos.x, pos.y);
-    }
-
-    function drawMove(e) {
-      if (!drawing) return;
-      const pos = getPosition(e);
-      signatureCtx.lineTo(pos.x, pos.y);
-      signatureCtx.stroke();
-    }
-
-    function drawEnd() {
-      drawing = false;
-    }
-
-    signatureCanvas.addEventListener('mousedown', drawStart);
-    signatureCanvas.addEventListener('mousemove', drawMove);
-    signatureCanvas.addEventListener('mouseup', drawEnd);
-    signatureCanvas.addEventListener('touchstart', drawStart, { passive: false });
-    signatureCanvas.addEventListener('touchmove', drawMove, { passive: false });
-    signatureCanvas.addEventListener('touchend', drawEnd);
-
-    signatureCanvas.addEventListener("touchstart", function (e) {
-      if (e.target === signatureCanvas) e.preventDefault();
-    }, { passive: false });
-
-    signatureCanvas.addEventListener("touchmove", function (e) {
-      if (e.target === signatureCanvas) e.preventDefault();
-    }, { passive: false });
-
-    function clearSignature() {
-      signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-    }
-
-    function startCamera() {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
-          currentStream = stream;
-          video.srcObject = stream;
-          video.style.display = 'block';
-        })
-        .catch(err => {
-          alert('ไม่สามารถเปิดกล้อง: ' + err);
-        });
-    }
-
-    function stopCamera() {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-        currentStream = null;
-        video.srcObject = null;
-        video.style.display = 'none';
-      }
-    }
-
-    function takePhoto() {
-      const canvas = document.createElement('canvas');
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
-      const aspectRatio = 1.586;
-      const targetHeight = videoWidth / aspectRatio;
-      const cropY = (videoHeight - targetHeight) / 2;
-      canvas.width = videoWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(video, 0, cropY, videoWidth, targetHeight, 0, 0, videoWidth, targetHeight);
-      const dataUrl = canvas.toDataURL('image/jpeg');
-      previewImg.src = dataUrl;
-      previewImg.style.display = 'block';
-      stopCamera();
-      scrollToElement("signatureSection");
-    }
-
-    function generateImage(callback) {
-      if (!previewImg.src) {
-        alert("กรุณาถ่ายภาพก่อนดูตัวอย่าง");
-        return;
-      }
-
-      const image = new Image();
-      image.onload = () => {
-        const canvas = document.createElement('canvas');
-        const margin = 50;
-        const sidePadding = 40;
-        const textSpacing = 30;
-        const signatureHeight = 150;
-        const totalHeight = image.height + textSpacing * 3 + signatureHeight + margin * 2;
-        canvas.width = image.width;
-        canvas.height = totalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(image, sidePadding, margin, canvas.width - sidePadding * 2, image.height);
-        ctx.font = '16px sans-serif';
-        ctx.fillStyle = 'black';
-        ctx.textAlign = 'center';
-        ctx.fillText('ยืนยันแบ่งชำระประกันกับออนไลน์โบรคเกอร์ประกันภัย', canvas.width / 2, image.height + margin + textSpacing);
-        ctx.fillText('สำเนาถูกต้อง', canvas.width / 2, image.height + margin + textSpacing * 2);
-        ctx.drawImage(signatureCanvas, sidePadding, image.height + margin + textSpacing * 2 + 10, canvas.width - sidePadding * 2, signatureHeight);
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        finalImage.src = dataUrl;
-        result.style.display = 'block';
-        finalDataUrl = dataUrl;
-        scrollToElement("shareSection");
-        if (callback) callback(dataUrl);
-      };
-      image.src = previewImg.src;
-    }
-
-    function generatePreview() {
-      generateImage();
-    }
-
-    function downloadAndShare() {
-      if (!finalDataUrl) {
-        alert("ยังไม่มีภาพตัวอย่าง กรุณากด 'ดูตัวอย่างก่อนแชร์'");
-        return;
-      }
-
-      const link = document.createElement('a');
-      link.href = finalDataUrl;
-      link.download = 'obisign.jpg';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      fetch(finalDataUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'obisign.jpg', { type: 'image/jpeg' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({
-              title: 'Obisign',
-              text: 'ส่งภาพเซ็นรับรอง Obisign',
-              files: [file]
-            });
-          } else {
-            alert('ไฟล์ถูกบันทึกแล้ว กรุณาแชร์ด้วยวิธีอื่น (LINE, Email ฯลฯ)');
-          }
-        });
-    }
-  </script>
+  });
+}
+</script>
 </body>
 </html>
